@@ -7,13 +7,18 @@ import java.util.Map;
 import java.util.PriorityQueue;
 import java.util.Set;
 
+import javax.swing.JFrame;
+
 class Djickastra {
     public List<LabyrinthNode> shortestPath;
     public int totalMoves;
     public Labyrinth labyrinth;
+    public GUIForDFS gui;
+    private JFrame frame ;
         
     public Djickastra(Labyrinth labyrinth) {
         this.labyrinth = labyrinth;
+        this.gui = new GUIForDFS(labyrinth);
     }
 
     public class NodeDistance {
@@ -106,15 +111,23 @@ class Djickastra {
         
         for (int i = 0; i < this.shortestPath.size(); i++) {
             LabyrinthNode node = this.shortestPath.get(i);
-            System.out.printf("(%d,%d:%c)", node.x, node.y, node.letter);
-            if (i < this.shortestPath.size() - 1) {
-                System.out.print(" → ");
-            }
+            node.isMot = true;
         }
-        System.out.println("\n");
+
+        this.frame = new JFrame("Word Labyrinth DFS Show");
+        frame.add(this.gui);
+        frame.pack();
+        frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        frame.setVisible(true);
+        //     System.out.printf("(%d,%d:%c)", node.x, node.y, node.letter);
+        //     if (i < this.shortestPath.size() - 1) {
+        //         System.out.print(" → ");
+        //     }
+        // }
+        // System.out.println("\n");
         
-        // Display the path on the labyrinth
-        this.labyrinth.printLabyrinthWithPath(this.shortestPath);
+        // // Display the path on the labyrinth
+        // this.labyrinth.printLabyrinthWithPath(this.shortestPath);
     }
 
 

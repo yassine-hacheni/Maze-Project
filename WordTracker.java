@@ -3,91 +3,121 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Scanner;
 import java.util.Set;
 import java.util.stream.Collectors;
 
 class WordTracker {
-    private Map<String, List<List<LabyrinthNode>>> allPossiblePaths; // Word -> All possible paths
-    private Map<String, Set<String>> foundPaths;  // Word -> Set of found path signatures
+    // private Map<String, List<List<LabyrinthNode>>> allPossiblePaths; // Word -> All possible paths
+    private ArrayList<String> foundwords;  // Word -> Set of found path signatures
+    // private List<List<LabyrinthNode>> foundPathsList;
     private Labyrinth labyrinth;
     private BFS bfs;
     private DFS dfs;
     private int totalPaths;
     private GameScore gameScore;
-    public WordTracker(Labyrinth labyrinth, GameScore gameScore,BFS bfs, DFS dfs) {
+    public WordTracker(Labyrinth labyrinth, GameScore gameScore) {
         this.labyrinth = labyrinth;
-        this.allPossiblePaths = new HashMap<>();
-        this.foundPaths = new HashMap<>();
-        this.bfs = bfs;
-        this.dfs = dfs;
+        // this.allPossiblePaths = new HashMap<>();
+        // this.foundPaths = new HashMap<>();
+        this.foundwords = new ArrayList<String>();
         this.totalPaths = 0;
         this.gameScore = gameScore;
-        initializeFromSearch();
+        // this.foundPathsList = new ArrayList<>();
+        // initializeFromSearch();
         //initializeFromSearch();
     }
 
+    // public List<List<LabyrinthNode>> getFoundPathsList() {
+    //     return foundPathsList;
+    // }
+
+    // public void setFoundPathsList(List<List<LabyrinthNode>> foundPathsList) {
+    //     this.foundPathsList = foundPathsList;
+    // }
+
+    public void setTotalPaths(int totalPaths) {
+        this.totalPaths = totalPaths;
+    }
+
+    public GameScore getGameScore() {
+        return gameScore;
+    }
+
+    public void setGameScore(GameScore gameScore) {
+        this.gameScore = gameScore;
+    }
+
     public boolean areAllWordsComplete() {
-        return labyrinth.getWords().stream().allMatch(word -> 
-            foundPaths.containsKey(word) && !foundPaths.get(word).isEmpty());
+        return labyrinth.getWords().size() == this.foundwords.size();
     }
 
     public Map<String, Integer> getProgress() {
         Map<String, Integer> progress = new HashMap<>();
         for (String word : labyrinth.getWords()) {
-            Set<String> paths = foundPaths.get(word);
-            progress.put(word, paths != null ? paths.size() : 0);
+            String paths = foundwords.stream()
+                .filter(w -> w.equals(word))
+                .findFirst()
+                .orElse(null);
+            progress.put(word, paths != null ? 1: 0);
         }
         return progress;
     }
 
-    private String getPathSignature(List<LabyrinthNode> path) {
+    public String getPathSignature(List<LabyrinthNode> path) {
         return path.stream()
             .map(n -> n.x + "," + n.y)
             .collect(Collectors.joining(";"));
     }
 
-    public boolean isPathNew(String word, List<LabyrinthNode> path) {
+    public boolean isPathValid(String word, List<LabyrinthNode> path) {
        String pathSignature = getPathSignature(path);
-        return this.foundPaths.get(word).add(pathSignature);
+       if(labyrinth.existPaths.get(word).equals(pathSignature)){
+        this.foundwords.add(word);
+        return true;
+
+       }else{
+        return false;
+       }
     }
 
-    private void findAllWordPaths(LabyrinthNode node, List<LabyrinthNode> currentPath, String currentWord) {
-        if (node == null || node.isBlocked || currentWord.length() > labyrinth.getMaxWordLength()) {
-            return;
-        }
+    // private void findAllWordPaths(LabyrinthNode node, List<LabyrinthNode> currentPath, String currentWord) {
+    //     if (node == null || node.isBlocked || currentWord.length() > labyrinth.getMaxWordLength()) {
+    //         return;
+    //     }
 
-        List<LabyrinthNode> newPath = new ArrayList<>(currentPath);
-        newPath.add(node);
-        String newWord = currentWord + node.letter;
+    //     List<LabyrinthNode> newPath = new ArrayList<>(currentPath);
+    //     newPath.add(node);
+    //     String newWord = currentWord + node.letter;
 
-        if (labyrinth.getWords().contains(newWord)) {
-            allPossiblePaths.get(newWord).add(newPath);
-            totalPaths++;
-            printPath(newPath , newWord);
-        }
+    //     if (labyrinth.getWords().contains(newWord)) {
+    //         allPossiblePaths.get(newWord).add(newPath);
+    //         totalPaths++;
+    //         printPath(newPath , newWord);
+    //     }
 
-        for (LabyrinthNode neighbor : node.neighbors) {
-            if (!neighbor.isBlocked && !currentPath.contains(neighbor)) {
-                findAllWordPaths(neighbor, newPath, newWord);
+    //     for (LabyrinthNode neighbor : node.neighbors) {
+    //         if (!neighbor.isBlocked && !currentPath.contains(neighbor)) {
+    //             findAllWordPaths(neighbor, newPath, newWord);
                 
-            }
-        }
-        gameScore.updateMinimumMoves();
-    }
+    //         }
+    //     }
+    //     gameScore.updateMinimumMoves();
+    // }
 
-    private void initializeFromSearch() {
-        for (String word : labyrinth.getWords()) {
-            allPossiblePaths.put(word, new ArrayList<>());
-            foundPaths.put(word, new HashSet<>());
-        }
+    // private void initializeFromSearch() {
+    //     for (String word : labyrinth.getWords()) {
+    //         allPossiblePaths.put(word, new ArrayList<>());
+    //         foundPaths.put(word, new HashSet<>());
+    //     }
         
-        // Find all possible paths for each word
-        for (LabyrinthNode startNode : labyrinth.getNodes()) {
-            if (!startNode.isBlocked) {
-                this.findAllWordPaths(startNode, new ArrayList<>(), "");
-            }
-        }
-    }
+    //     // Find all possible paths for each word
+    //     for (LabyrinthNode startNode : labyrinth.getNodes()) {
+    //         if (!startNode.isBlocked) {
+    //             this.findAllWordPaths(startNode, new ArrayList<>(), "");
+    //         }
+    //     }
+    // }
 
     public void printPath(List<LabyrinthNode> path , String word) {
         System.out.println("\nPath taken:" + word);
@@ -117,42 +147,51 @@ class WordTracker {
         }
     }
 
-
-    // Method to run both searches and compare results
-    public void runSearches() {
-        System.out.println("\n=== Running Automated Searches ===");
-        
-        // Run BFS
+    public void runBFS(BFS bfs){
         SearchResult bfsResult = bfs.searchBFS();
         this.printSearchResults(bfsResult, "BFS");
-        
-        // Run DFS
+        System.out.println("BFS total moves: " + bfsResult.totalMoves);
+        System.out.println("BFS words found: " + bfsResult.wordsFound.size());
+
+    }
+
+    public void runDFS(DFS dfs){
         SearchResult dfsResult = dfs.searchDFS();
         this.printSearchResults(dfsResult, "DFS");
         
         // Compare results
-        System.out.println("\n=== Search Comparison ===");
-        System.out.println("BFS total moves: " + bfsResult.totalMoves);
+        System.out.println("\n=== Search Score ===");
         System.out.println("DFS total moves: " + dfsResult.totalMoves);
-        System.out.println("BFS words found: " + bfsResult.wordsFound.size());
+       
         System.out.println("DFS words found: " + dfsResult.wordsFound.size());
     }
+    // Method to run both searches and compare results
+    // public void runSearches(String x) {
+        
+    //     if(x.equals("1")){
+    //         this.runDFS();
+        
+    //     }else{
+    //         this.runBFS();
+    //     }
+        
+    // }
 
-    public Map<String, List<List<LabyrinthNode>>> getAllPossiblePaths() {
-        return allPossiblePaths;
-    }
+    // public Map<String, List<List<LabyrinthNode>>> getAllPossiblePaths() {
+    //     return allPossiblePaths;
+    // }
 
-    public void setAllPossiblePaths(Map<String, List<List<LabyrinthNode>>> allPossiblePaths) {
-        this.allPossiblePaths = allPossiblePaths;
-    }
+    // public void setAllPossiblePaths(Map<String, List<List<LabyrinthNode>>> allPossiblePaths) {
+    //     this.allPossiblePaths = allPossiblePaths;
+    // }
 
-    public Map<String, Set<String>> getFoundPaths() {
-        return foundPaths;
-    }
+    // public Map<String, String> getFoundPaths() {
+    //     return foundPaths;
+    // }
 
-    public void setFoundPaths(Map<String, Set<String>> foundPaths) {
-        this.foundPaths = foundPaths;
-    }
+    // public void setFoundPaths(Map<String, String foundPaths) {
+    //     this.foundPaths = foundPaths;
+    // }
 
     public Labyrinth getLabyrinth() {
         return labyrinth;

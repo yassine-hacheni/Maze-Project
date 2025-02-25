@@ -9,6 +9,7 @@ class LabyrinthNode {
     public boolean isEntry;
     public boolean isExit;
     public boolean isNecessary;
+    public boolean isMot = false;
 
     public LabyrinthNode(char letter, int x, int y) {
         this.letter = letter;
@@ -25,6 +26,10 @@ class LabyrinthNode {
         if (!isBlocked && !node.isBlocked) {
             neighbors.add(node);
         }
+    }
+
+    public boolean isEqual(LabyrinthNode node) {
+        return this.x == node.x && this.y == node.y;
     }
 }
 

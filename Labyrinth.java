@@ -2,6 +2,7 @@
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
+import java.time.format.SignStyle;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -13,6 +14,9 @@ import java.util.Stack;
 import java.util.stream.Collectors;
 
 class Labyrinth {
+
+    public Map<String, String> existPaths;  // Word -> Set of found path signatures
+
     // Movement mapping using numpad layout
     public static final Map<Integer, int[]> DIRECTION_MAP = new HashMap<>() {{
         put(7, new int[]{-1, -1}); // up-left
@@ -25,6 +29,7 @@ class Labyrinth {
         put(3, new int[]{1, 1});   // down-right
     }};
     private List<LabyrinthNode> nodes;
+    private Map<String, LabyrinthNode> nodeMap;
     private LabyrinthNode entry;
     private LabyrinthNode exit;
     private List<String> words;
@@ -39,6 +44,7 @@ class Labyrinth {
         nodes = new ArrayList<>();
         random = new Random();
         words = loadWords(difficulty);
+        existPaths = new HashMap<>();
         maxWordLength = words.stream()
             .mapToInt(String::length)
             .max()
@@ -78,6 +84,7 @@ class Labyrinth {
             case "medium": wordCount = 8; niveau = 0.3;  maxX = random.nextInt(7,11); maxY = 7;break;
             case "hard": wordCount = 12; niveau = 0.4; maxX = random.nextInt(9,13) ; maxY = 9; break;
             default: wordCount = 5; niveau = 0.3 ;  maxX = random.nextInt(7,11); maxY = 7;
+
         }
         String w;
         while (selectedWords.size() < wordCount && !allWords.isEmpty()) {
@@ -90,18 +97,20 @@ class Labyrinth {
         return selectedWords;
     }
 
-    private void placeWord(String word, int startX, int startY, int direction, Map<String, LabyrinthNode> positionMap) {
+    private String placeWord(String word, int startX, int startY, int direction, Map<String, LabyrinthNode> positionMap) {
         // Define movement for each direction using numpad layout
         boolean pass = true;
         int[] dx = {1, 1, 0, -1, -1, -1, 0, 1};  // Down, Down-Right, Right, Up-Right, Up, Up-Left, Left, Down-Left
         int[] dy = {0, 1, 1, 1, 0, -1, -1, -1};
         
+        String signature = "";
         // Place each letter of the word
         for (int i = 0; i < word.length(); i++) {
             // Calculate new position based on direction
             int x = (startX + (dx[direction] * i));
             int y = (startY + (dy[direction] * i));
             String pos = x + "," + y;
+            signature += pos + ";";
             // if((x < 0) || (y < 0) || (x >= maxX) || (y >= maxY)){
             //     direction = (direction + 1) % 8;
             //     pass = false;
@@ -143,6 +152,7 @@ class Labyrinth {
                 }
             }
         }
+        return signature;
     }
 
     private boolean canPlaceWord(String word, int startX, int startY, int direction, Map<String, LabyrinthNode> positionMap) {
@@ -208,24 +218,25 @@ class Labyrinth {
             while (!placed) {
                 int startX = random.nextInt(maxX);
                 int startY = random.nextInt(maxY);
-                int midX = maxX /2 ;
-                int midY = maxY /2;
-                if(startX< midX && startY < midY){//0 1 2
-                    int[] directioni = {0,1,2};
-                    int direction = directioni[random.nextInt(3)];
-                }else if ((startX > midX) && (startY < midY)){//2 3 4
-                    int[] directioni = {0,1,3};
-                    int direction = directioni[random.nextInt(3)];
-                }else if((startY > midY)&&(startX < midX)){//0 7 6
-                    int[] directioni = {0,6,7};
-                    int direction = directioni[random.nextInt(3)];
-                }else if((startX > midX) && (startY > midY)){//4 5 6
-                    int[] directioni = {4,5,6};
-                    int direction = directioni[random.nextInt(3)];
-                }
+                // int midX = maxX /2 ;
+                // int midY = maxY /2;
+                // if(startX< midX && startY < midY){//0 1 2
+                //     int[] directioni = {0,1,2};
+                //     int direction = directioni[random.nextInt(3)];
+                // }else if ((startX > midX) && (startY < midY)){//2 3 4
+                //     int[] directioni = {0,1,3};
+                //     int direction = directioni[random.nextInt(3)];
+                // }else if((startY > midY)&&(startX < midX)){//0 7 6
+                //     int[] directioni = {0,6,7};
+                //     int direction = directioni[random.nextInt(3)];
+                // }else if((startX > midX) && (startY > midY)){//4 5 6
+                //     int[] directioni = {4,5,6};
+                //     int direction = directioni[random.nextInt(3)];
+                // }
                 int direction = random.nextInt(8);
                 if (canPlaceWord(word, startX, startY, direction, positionMap)) {
-                    placeWord(word, startX, startY, direction, positionMap);
+                    String signature = placeWord(word, startX, startY, direction, positionMap);
+                    existPaths.put(word, signature.substring(0, signature.length() - 1));
                     placed = true;
                 }
             }
@@ -253,6 +264,11 @@ class Labyrinth {
             if (!node.isBlocked) {
                 connectNeighbors(node, positionMap);
             }
+        }
+
+        this.nodeMap = new HashMap<>();
+        for (LabyrinthNode node : nodes) {
+            this.nodeMap.put(node.x + "," + node.y, node);
         }
     }
 
@@ -321,6 +337,86 @@ private boolean isValidPosition(int x, int y) {
         exit.isExit = true;
     }
 
+    public Map<String, LabyrinthNode> getNodeMap() {
+        return nodeMap;
+    }
+
+
+
+
+
+
+
+    public void setNodeMap(Map<String, LabyrinthNode> nodeMap) {
+        this.nodeMap = nodeMap;
+    }
+
+
+
+
+
+
+
+    public double getNiveau() {
+        return niveau;
+    }
+
+
+
+
+
+
+
+    public void setNiveau(double niveau) {
+        this.niveau = niveau;
+    }
+
+
+
+
+
+
+
+    public Map<Character, Integer> getLetterDistribution() {
+        return letterDistribution;
+    }
+
+
+
+
+
+
+
+    public void setLetterDistribution(Map<Character, Integer> letterDistribution) {
+        this.letterDistribution = letterDistribution;
+    }
+
+
+
+
+
+
+
+    public List<String> getPoses() {
+        return poses;
+    }
+
+
+
+
+
+
+
+    public void setPoses(List<String> poses) {
+        this.poses = poses;
+    }
+
+
+
+
+
+
+
     public void printLabyrinth(LabyrinthNode currentNode) {
         // Print column numbers
         System.out.print("    ");
@@ -329,16 +425,13 @@ private boolean isValidPosition(int x, int y) {
         }
         System.out.println("\n");
 
-        Map<String, LabyrinthNode> nodeMap = new HashMap<>();
-        for (LabyrinthNode node : nodes) {
-            nodeMap.put(node.x + "," + node.y, node);
-        }
+        
 
         for (int x = minX; x <= maxX; x++) {
             System.out.printf("%2d  ", x);
 
             for (int y = minY; y <= maxY; y++) {
-                LabyrinthNode node = nodeMap.get(x + "," + y);
+                LabyrinthNode node = this.nodeMap.get(x + "," + y);
             
                 if (node == currentNode) {
                     System.out.print("*" + node.letter + "*");
@@ -353,7 +446,7 @@ private boolean isValidPosition(int x, int y) {
                 }
             
                 if (y < maxY) {
-                    LabyrinthNode rightNeighbor = nodeMap.get(x + "," + (y + 1));
+                    LabyrinthNode rightNeighbor = this.nodeMap.get(x + "," + (y + 1));
                     if (rightNeighbor != null && !node.isBlocked && !rightNeighbor.isBlocked 
                             && node.neighbors.contains(rightNeighbor)) {
                         System.out.print("---");
@@ -411,10 +504,7 @@ private boolean isValidPosition(int x, int y) {
         }
         System.out.println("\n");
         
-        Map<String, LabyrinthNode> nodeMap = new HashMap<>();
-        for (LabyrinthNode node : nodes) {
-            nodeMap.put(node.x + "," + node.y, node);
-        }
+       
         
         for (int x = minX; x <= maxX; x++) {
             System.out.printf("%2d  ", x - minX);
